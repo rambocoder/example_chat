@@ -1,0 +1,5 @@
+log/*
+ebin/*.beam
+erl_crash.dump
+!.gitignore
+

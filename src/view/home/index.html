@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ChicagoBoss Chat Demo</title>
+<style>
+	html, body {margin:0; padding:0;}
+	body {font:50% Helvetica, Arial, sans-serif; }
+	#stage {margin: 0 auto; margin-top: 1em; text-align:left; font-size:2.1em; width:40em; -moz-border-radius: 15px; border-radius: 15px; border:2px solid #000; }
+	#header {text-align:center; }
+	/* Messages Display Area */
+	#chatMessages {margin:0 auto; margin-bottom: 20px; border:1px solid #CCC; width:90%; height:15em; overflow:auto; background-color: #F8F8F8; }
+	#msgList {margin:0px; padding:5px; list-style:none;}
+	#msgList li {padding:5px 10px; border-bottom:1px solid gray;}
+	.error {color:red;}	
+	/* Messages Input Area */
+	#inputArea {margin:0 auto; width: 90%; }
+	#chatForm {padding:5px; text-align:center;}
+	#chatForm input {width:75%; font-size:1em; margin:0 2px;}
+	#chatForm .submit {width:20%;}
+</style>
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<script>
+// Alias the jQuery Namespace
+jQuery(document).ready(function($) {
+	// timestamp uses ErlyTDL of boss_mq:now("updates")
+	var timestamp = {{ timestamp }};
+	var pullUrl = "/home/pull";
+	var pushUrl = "/home/push";
+	
+	$("#inputBox").focus();
+	
+	// bind events for the messages area
+	
+	var chatDisplay = {
+		print: function(message){
+			$("#msgList").prepend('<li>' + message + '</li>');
+		},
+		error: function(error){
+			chatDisplay.print('<span class="error">' + error + '</span>');
+		}
+	};
+	
+	$('#chatForm').bind({
+		'pull': function() {
+			$.ajax({
+				url: pullUrl + "/" + timestamp,
+				dataType: "json",
+				method: "GET",
+				success: function(data) {
+					if("ok" in data) {
+						timestamp  = data.timestamp;
+						if ( typeof data.ok.text == "undefined")
+						{
+							// means that a timeout was trigered on the server                    
+							$('#chatForm').triggerHandler("pull");
+						}else
+						{
+							chatDisplay.print(data.ok.text);
+							$('#chatForm').triggerHandler("pull");
+						}
+					}
+					else {
+						chatDisplay.error("Failed to pull due to this data: " + data);
+						$(this).triggerHandler("pull");
+					}
+				}
+			});
+		}
+	}).triggerHandler("pull");  // kick off the pull event after all the events are bound to the chatForm object	
+	
+
+	// configure the Shout submit to publish a message
+	$("#chatForm").submit(function(event){
+		$.ajax({
+			url: pushUrl,
+			dataType: "json",
+			type: "POST",
+			// TODO: figure out how to POST data in {message:messageBody} format without this hack
+			// because CB is not able to JSON decode data in message:text format, only {message:text} ones
+			data: '{"message":"'+$("#inputBox").val() + '"}', 
+			success: function(data) {
+				// clear the input box after the user submits data
+				$('#inputBox').val('').focus();
+				if("ok" in data) {
+					// do nothing if successful POST because our GET will pull the message that we submited
+				} else {
+					alert("Failed after create a new shout due to this response: " + data);
+				}
+			},
+			error: function(jqXHR, textStatus, errorThrown) {
+				chatDisplay.error("Failed to submit due to this response: " + textStatus);
+			}
+		});
+		// prevent the submit button from doing a POST and causing a page reload by returning false from the submit event
+		return false;
+	});
+
+
+});
+</script>
+</head>
+<body>
+<div id="stage">
+        <div id="header">
+		<h1>ChicagoBoss Chat Demo</h1>
+        </div>
+        <div id="inputArea">
+        	<!-- #chatForm events will be used as a recursive loop, since recursion is limited in JavaScript -->
+		<form id="chatForm" autocomplete="off">
+		        <input type="text" name="inputBox" id="inputBox">
+		        <input type="submit" class="submit" value="Shout">
+		</form>     
+	</div>   
+	<!-- chat messages will be rendered inside this div, prepended to msgList -->
+	<div id="chatMessages">
+		<ul id="msgList"></ul>
+	</div>
+
+</div>
+</body>
+</html>
+
+
