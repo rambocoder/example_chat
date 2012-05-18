@@ -52,25 +52,32 @@ jQuery(document).ready(function($) {
 						if ( typeof data.ok.text == "undefined")
 						{
 							// means that a timeout was trigered on the server                    
-							$('#chatForm').triggerHandler("pull");
+							$('#chatForm').triggerHandler("pull")
 						}else
 						{
 							chatDisplay.print(data.ok.text);
-							$('#chatForm').triggerHandler("pull");
+							$('#chatForm').triggerHandler("pull")
 						}
 					}
 					else {
 						chatDisplay.error("Failed to pull due to this data: " + data);
-						$(this).triggerHandler("pull");
+						// $('#chatForm').triggerHandler("pull");
 					}
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					chatDisplay.error("Failed to pull due to this status: " + textStatus + " and error: " + errorThrown);
+					// $('#chatForm').triggerHandler("pull");
 				}
 			});
+			setTimeout(function() { /* Do Nothing here */},1);
 		}
 	}).triggerHandler("pull");  // kick off the pull event after all the events are bound to the chatForm object	
 	
 
 	// configure the Shout submit to publish a message
 	$("#chatForm").submit(function(event){
+		// kill the long poll if it it exists
+
 		$.ajax({
 			url: pushUrl,
 			dataType: "json",

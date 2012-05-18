@@ -6,9 +6,17 @@ index('GET', []) ->
         {ok, [{timestamp, Timestamp}]}.
         
 pull('GET', [LastTimestamp]) ->
+	process_flag(trap_exit, true),
 	% time out a pull after 15 seconds
-	{ok, Timestamp, Objects} = boss_mq:pull("updates", list_to_integer(LastTimestamp), 15),
-        {json, [{timestamp, Timestamp}, {ok, Objects}]}.
+	{ok, Timestamp, Objects} = boss_mq:pull("updates", list_to_integer(LastTimestamp), 30),
+	receive
+        {'EXIT', From, Reason} ->
+			error_logger:format("~p EXIT with ~p~n", [From, Reason])
+      
+	after 0 ->
+		noop
+    end,
+	{json, [{timestamp, Timestamp}, {ok, Objects}]}.
         
 push('POST', []) ->
   Json = mochijson2:decode(Req:request_body()),
