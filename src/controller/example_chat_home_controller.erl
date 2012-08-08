@@ -8,7 +8,7 @@ index('GET', []) ->
 pull('GET', [LastTimestamp]) ->
 	process_flag(trap_exit, true),
 	% time out a pull after 15 seconds
-	{ok, Timestamp, Objects} = boss_mq:pull("updates", list_to_integer(LastTimestamp), 30),
+	{ok, Timestamp, Objects} = boss_mq:pull("updates", list_to_integer(LastTimestamp), 15),
 	receive
         {'EXIT', From, Reason} ->
 			error_logger:format("~p EXIT with ~p~n", [From, Reason])
